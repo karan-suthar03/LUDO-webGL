@@ -28,8 +28,9 @@ const WebGLCanvas = () => {
 
     const handleResize = () => {
       if (canvas) {
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
         renderer.renderer.resize(canvas.width, canvas.height)
       }
     }
