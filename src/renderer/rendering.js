@@ -37,6 +37,7 @@ export class Renderer {
     const colorLoc = this.program.getAttributeLocation('a_color')
     const sizeMultiplierLoc = this.program.getAttributeLocation('a_sizeMultiplier')
     const typeLoc = this.program.getAttributeLocation('a_type')
+    const directionLoc = this.program.getAttributeLocation('a_direction')
     
     const stride = this.LudoCells[0].length * 4
     
@@ -51,6 +52,9 @@ export class Renderer {
     }
     if (typeLoc !== -1) {
       this.vao.addInstancedAttribute(typeLoc, this.instanceBuffer.getBuffer(), 1, this.glContext.FLOAT, false, stride, 16, 1)
+    }
+    if (directionLoc !== -1) {
+      this.vao.addInstancedAttribute(directionLoc, this.instanceBuffer.getBuffer(), 1, this.glContext.FLOAT, false, stride, 20, 1)
     }
   }
 
@@ -87,14 +91,15 @@ export class Renderer {
       this.LudoCells = [];
 
       /* 
-      * structure of each: [x, y, color, sizeMultiplier,type]
+      * structure of each: [x, y, color, sizeMultiplier, type, direction]
       * color 0: gray
       * color 1: red
       * color 2: green
       * color 3: blue
       * color 4: yellow
       * sizeMultiplier: number
-      * type: 0 for normal cell, 1 for home area cell, 2 for inside home cells
+      * type: 0 for normal cell, 1 for home area cell, 2 for inside home cells, 3 for center-point pentagon
+      * direction: 0 up, 1 right, 2 down, 3 left (used by type 3)
       */
 
       for (let i = 0; i < cells; i++) {
@@ -105,27 +110,40 @@ export class Renderer {
           let x = -1 + margin + cellSize * (j + 0.5);
           let y = -1 + margin + cellSize * (i + 0.5);
 
+          if (i >= 6 && i <= 8 && j >= 6 && j <= 8) {
+            if (i === 7 && j === 6) {
+              this.LudoCells.push([x, y, 4, 2, 3, 1]);
+            } else if (i === 7 && j === 8) {
+              this.LudoCells.push([x, y, 1, 2, 3, 3]);
+            } else if (i === 6 && j === 7) {
+              this.LudoCells.push([x, y, 3, 2, 3, 2]);
+            } else if (i === 8 && j === 7) {
+              this.LudoCells.push([x, y, 2, 2, 3, 0]);
+            }
+            continue;
+          }
+
           if ((i === 7 && j > 0 && j < 6) || (i == 8 && j == 1)) {
-            this.LudoCells.push([x, y, 4, 1,0]);
+            this.LudoCells.push([x, y, 4, 1, 0, 0]);
             continue;
           }
 
           if ((i === 7 && j > 8 && j < 14) || (i == 6 && j == 13)) {
-            this.LudoCells.push([x, y, 1, 1,0]);
+            this.LudoCells.push([x, y, 1, 1, 0, 0]);
             continue;
           }
 
           if ((j === 7 && i > 0 && i < 6) || (j == 6 && i == 1)) {
-            this.LudoCells.push([x, y, 3, 1,0]);
+            this.LudoCells.push([x, y, 3, 1, 0, 0]);
             continue;
           }
 
           if (j === 7 && i > 8 && i < 14 || (j == 8 && i == 13)) {
-            this.LudoCells.push([x, y, 2, 1,0]);
+            this.LudoCells.push([x, y, 2, 1, 0, 0]);
             continue;
           }
 
-          this.LudoCells.push([x, y, 0, 1,0]);
+          this.LudoCells.push([x, y, 0, 1, 0, 0]);
         }
       }
 
@@ -139,10 +157,10 @@ export class Renderer {
       let x = -1 + margin + cellSize * (centerX + 0.5);
       let y = 1 - (margin + cellSize * (centerY + 0.5));
 
-      this.LudoCells.push([x, y, 4, 6.1,1]);
-      this.LudoCells.push([-x, y, 2, 6.1,1]);
-      this.LudoCells.push([-x, -y, 1, 6.1,1]);
-      this.LudoCells.push([x, -y, 3, 6.1,1]);
+      this.LudoCells.push([x, y, 4, 6.1, 1, 0]);
+      this.LudoCells.push([-x, y, 2, 6.1, 1, 0]);
+      this.LudoCells.push([-x, -y, 1, 6.1, 1, 0]);
+      this.LudoCells.push([x, -y, 3, 6.1, 1, 0]);
 
       let offset = 0.1;
 
@@ -158,10 +176,10 @@ export class Renderer {
           const x2 = x * xMult;
           const y2 = y * yMult;
 
-          this.LudoCells.push([x2 - offset, y2 - offset, color, 1.5, 2]);
-          this.LudoCells.push([x2 + offset, y2 - offset, color, 1.5, 2]);
-          this.LudoCells.push([x2 + offset, y2 + offset, color, 1.5, 2]);
-          this.LudoCells.push([x2 - offset, y2 + offset, color, 1.5, 2]);
+          this.LudoCells.push([x2 - offset, y2 - offset, color, 1.5, 2, 0]);
+          this.LudoCells.push([x2 + offset, y2 - offset, color, 1.5, 2, 0]);
+          this.LudoCells.push([x2 + offset, y2 + offset, color, 1.5, 2, 0]);
+          this.LudoCells.push([x2 - offset, y2 + offset, color, 1.5, 2, 0]);
         }
       }
 
