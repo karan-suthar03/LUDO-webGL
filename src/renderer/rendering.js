@@ -13,12 +13,18 @@ export class Renderer {
     this.vao = null
     this.instanceBuffer = null
     this.isInitialized = false
+    this.pucks = []
+  }
+
+  getRenderableInstances() {
+    return [...(this.LudoCells || []), ...(this.pucks || [])]
   }
 
   createInstanceBuffer() {
-    if (!this.LudoCells) return
+    const instances = this.getRenderableInstances()
+    if (!instances.length) return
 
-    const instancePositions = new Float32Array(this.LudoCells.flat())
+    const instancePositions = new Float32Array(instances.flat())
 
     
     this.instanceBuffer = new Buffer(
@@ -39,7 +45,7 @@ export class Renderer {
     const typeLoc = this.program.getAttributeLocation('a_type')
     const directionLoc = this.program.getAttributeLocation('a_direction')
     
-    const stride = this.LudoCells[0].length * 4
+    const stride = instances[0].length * 4
     
     if (positionLoc !== -1) {
       this.vao.addInstancedAttribute(positionLoc, this.instanceBuffer.getBuffer(), 2, this.glContext.FLOAT, false, stride, 0, 1)
@@ -188,6 +194,27 @@ export class Renderer {
     } catch (error) {
       throw error
     }
+
+    this.initializePucks()
+  }
+
+  initializePucks() {
+    if (!this.LudoCells?.length) {
+      this.pucks = []
+      return
+    }
+
+    const uniqueHomeSlots = new Map()
+    this.LudoCells.forEach((cell) => {
+      if (cell[4] !== 2) return
+      const key = `${cell[0].toFixed(6)}:${cell[1].toFixed(6)}:${cell[2]}`
+      if (!uniqueHomeSlots.has(key)) {
+        uniqueHomeSlots.set(key, cell)
+      }
+    })
+
+    const homeSlots = [...uniqueHomeSlots.values()]
+    this.pucks = homeSlots.map(([x, y, color]) => [x, y, color, 0.85, 4, 0])
   }
 
   resize(width, height) {
@@ -200,9 +227,9 @@ export class Renderer {
   render() {
     if (!this.isInitialized) return
 
-    // Update the instance buffer with new data
+    // Update the instance buffer with board and puck data.
     if (this.instanceBuffer) {
-      const instancePositions = new Float32Array(this.LudoCells.flat());
+      const instancePositions = new Float32Array(this.getRenderableInstances().flat());
       this.instanceBuffer.setData(instancePositions);
     }
 
@@ -214,7 +241,7 @@ export class Renderer {
     this.program.setUniform('u_squareSize', pointSize)
 
     if (this.vao) {
-      this.vao.drawInstanced(this.glContext.POINTS, 1, this.LudoCells.length)
+      this.vao.drawInstanced(this.glContext.POINTS, 1, this.getRenderableInstances().length)
     }
   }
 

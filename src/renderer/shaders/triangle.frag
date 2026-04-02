@@ -66,6 +66,8 @@ void main() {
 
     if (v_type == 2.0) { // inside home cells
         dist = length(coord) - halfSize; 
+    } else if (v_type == 4.0) { // puck
+        dist = length(coord) - 0.42;
     } else if (v_type == 3.0) { // center-point pentagons
         vec2 oriented = rotateToUp(coord, v_direction);
         float pentagonCornerRadius = 0.1;
@@ -81,7 +83,7 @@ void main() {
     
     float innerAlpha = 1.0 - smoothstep(-thickness - fw * 0.5, -thickness + fw * 0.5, dist);
     
-    float finalAlpha = alpha - innerAlpha;
+    float finalAlpha = (v_type == 4.0) ? alpha : (alpha - innerAlpha);
     finalAlpha = clamp(finalAlpha, 0.0, 1.0);
     
     if (finalAlpha > 0.0) {
